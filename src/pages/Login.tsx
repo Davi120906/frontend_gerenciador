@@ -12,6 +12,8 @@ const Login: React.FC = () => {
     try{
       const response = await loginUser({id, password: senha});
       console.log('token: ', response.token);
+      localStorage.setItem("tokenUser",response.token);
+      console.log('token salvo: ', localStorage.getItem("tokenUser"));
     }catch(error){
       console.log('deu erro aqui bicho', error);
       
