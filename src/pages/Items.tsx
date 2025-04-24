@@ -10,6 +10,7 @@ const Items: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [currentItem, setCurrentItem] = useState<Itens | null>(null);
+  const [viewingItem, setViewingItem] = useState<Itens | null>(null);
   
   // Form state for insert/update operations
   const [formData, setFormData] = useState<Partial<Itens>>({
@@ -129,6 +130,8 @@ const Items: React.FC = () => {
 
   const handleActionSelect = (action: string, item?: Itens) => {
     setSelectedAction(action);
+    setViewingItem(null); // Close view if open
+    
     if (item && (action === 'update' || action === 'move')) {
       setCurrentItem(item);
       if (action === 'update') {
@@ -149,6 +152,64 @@ const Items: React.FC = () => {
         });
       }
     }
+  };
+
+  const handleViewItem = (item: Itens) => {
+    setViewingItem(item);
+    setSelectedAction(null);
+  };
+
+  const renderViewItemDetails = () => {
+    if (!viewingItem) return null;
+    
+    return (
+      <div className="action-form">
+        <h3>Detalhes do Item</h3>
+        <div className="form-group">
+          <label>Patrimônio Nº:</label>
+          <input type="text" value={viewingItem.nPatrimonio} readOnly />
+        </div>
+        <div className="form-group">
+          <label>Nº Antigo:</label>
+          <input type="text" value={viewingItem.nAntigo} readOnly />
+        </div>
+        <div className="form-group">
+          <label>Descrição:</label>
+          <input type="text" value={viewingItem.descricao} readOnly />
+        </div>
+        <div className="form-group">
+          <label>Conservação:</label>
+          <input type="text" value={viewingItem.conservacao} readOnly />
+        </div>
+        <div className="form-group">
+          <label>Valor:</label>
+          <input type="text" value={`R$ ${viewingItem.valorBem.toFixed(2)}`} readOnly />
+        </div>
+        {viewingItem.foto && (
+          <div className="form-group">
+            <label>Foto:</label>
+            <div>
+              <img src={viewingItem.foto} alt="Item" style={{ maxWidth: '100%', maxHeight: '200px' }} />
+            </div>
+          </div>
+        )}
+        <div className="form-group">
+          <label>Sala Registrada:</label>
+          <input type="text" value={viewingItem.salaRegistrada} readOnly />
+        </div>
+        <div className="form-group">
+          <label>Sala Atual:</label>
+          <input type="text" value={viewingItem.salaAtual} readOnly />
+        </div>
+        <div className="form-group">
+          <label>Estado:</label>
+          <input type="text" value={viewingItem.state || 'N/A'} readOnly />
+        </div>
+        <div className="form-buttons">
+          <button type="button" className="btn-cancel" onClick={() => setViewingItem(null)}>Fechar</button>
+        </div>
+      </div>
+    );
   };
 
   const renderActionForm = () => {
@@ -385,6 +446,9 @@ const Items: React.FC = () => {
         <button onClick={() => selectedAction !== 'move' ? setSelectedAction('move') : setSelectedAction(null)}>
           Mover
         </button>
+        <button onClick={() => selectedAction !== 'view' ? setSelectedAction('view') : setSelectedAction(null)}>
+          Visualizar
+        </button>
         <button onClick={() => selectedAction !== 'remove' ? setSelectedAction('remove') : setSelectedAction(null)}>
           Remover
         </button>
@@ -396,6 +460,7 @@ const Items: React.FC = () => {
         {error && <div className="error-message">{error}</div>}
         
         {selectedAction && renderActionForm()}
+        {viewingItem && renderViewItemDetails()}
         
         {loading ? (
           <div className="loading">Loading...</div>
@@ -434,6 +499,7 @@ const Items: React.FC = () => {
                       <td className="action-buttons">
                         <button onClick={() => handleActionSelect('update', item)}>Edit</button>
                         <button onClick={() => handleActionSelect('move', item)}>Move</button>
+                        <button onClick={() => handleViewItem(item)}>View</button>
                         {selectedAction === 'remove' && (
                           <button className="delete-btn" onClick={() => handleDelete(item.nPatrimonio)}>
                             Delete
