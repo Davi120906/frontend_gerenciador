@@ -1,11 +1,16 @@
 import './App.css';
-import Login from './pages/Login'; // ajuste o caminho se estiver diferente
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import Items from './pages/Items'; // importe aqui o Items se ainda não estiver
 
 function App() {
   return (
-    <div className="App">
-      <Login />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/items" element={<Items />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

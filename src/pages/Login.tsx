@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import './Login.css';
 import { loginUser } from '../services/LoginService';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [id, setId] = useState('');
   const [senha, setSenha] = useState('');
 
@@ -13,7 +15,9 @@ const Login: React.FC = () => {
       const response = await loginUser({id, password: senha});
       console.log('token: ', response.token);
       localStorage.setItem("tokenUser",response.token);
+      localStorage.setItem("idUser", id);
       console.log('token salvo: ', localStorage.getItem("tokenUser"));
+      navigate('/items');
     }catch(error){
       console.log('deu erro aqui bicho', error);
       
