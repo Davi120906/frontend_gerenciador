@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './Login.css';
 import { loginUser } from '../services/LoginService';
 import { useNavigate } from 'react-router-dom';
+import { getAllItems, deleteItem, updateItem, moveItem, registerItem } from '../services/ItemsService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,11 @@ const Login: React.FC = () => {
       localStorage.setItem("tokenUser",response.token);
       localStorage.setItem("idUser", id);
       console.log('token salvo: ', localStorage.getItem("tokenUser"));
-      navigate('/items');
+      
+      const itens = await getAllItems();
+      console.log('Itens recebidos após login:', itens[0].foto);
+
+      ///navigate('/items');
     }catch(error){
       console.log('deu erro aqui bicho', error);
       

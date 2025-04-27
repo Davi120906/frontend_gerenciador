@@ -41,6 +41,8 @@ const Items: React.FC = () => {
       
       setItems(data);
       setError(null);
+      console.log(data[0].foto); 
+      console.log("aaaa");
     } catch (err) { 
       setError('Failed to fetch items. Please try again later.');
       console.error('Error fetching items:', err);
@@ -54,6 +56,7 @@ const Items: React.FC = () => {
       await deleteItem(nPatrimonio);
       // Refresh items list after delete
       fetchItems();
+      setSelectedAction(null);
     } catch (err) {
       setError('Failed to delete item. Please try again.');
       console.error('Error deleting item:', err);
@@ -128,35 +131,42 @@ const Items: React.FC = () => {
     });
   };
 
-  const handleActionSelect = (action: string, item?: Itens) => {
-    setSelectedAction(action);
-    setViewingItem(null); // Close view if open
-    
-    if (item && (action === 'update' || action === 'move')) {
-      setCurrentItem(item);
-      if (action === 'update') {
-        setFormData({
-          nPatrimonio: item.nPatrimonio,
-          nAntigo: item.nAntigo,
-          descricao: item.descricao,
-          conservacao: item.conservacao,
-          valorBem: item.valorBem,
-          foto: item.foto,
-          salaRegistrada: item.salaRegistrada,
-          salaAtual: item.salaAtual
-        });
-      } else if (action === 'move') {
-        setMoveFormData({
-          nPatrimonio: item.nPatrimonio,
-          salaAtual: ''
-        });
-      }
+  const handleActionSelect = (action: string) => {
+    if (selectedAction === action) {
+      // Toggle off if already selected
+      setSelectedAction(null);
+    } else {
+      setSelectedAction(action);
+      setViewingItem(null); // Close view if open
     }
   };
 
-  const handleViewItem = (item: Itens) => {
-    setViewingItem(item);
-    setSelectedAction(null);
+  const handleSelectItem = (item: Itens) => {
+    if (selectedAction === 'view') {
+      setViewingItem(item);
+    } else if (selectedAction === 'update') {
+      setCurrentItem(item);
+      setFormData({
+        nPatrimonio: item.nPatrimonio,
+        nAntigo: item.nAntigo,
+        descricao: item.descricao,
+        conservacao: item.conservacao,
+        valorBem: item.valorBem,
+        foto: item.foto,
+        salaRegistrada: item.salaRegistrada,
+        salaAtual: item.salaAtual
+      });
+    } else if (selectedAction === 'move') {
+      setCurrentItem(item);
+      setMoveFormData({
+        nPatrimonio: item.nPatrimonio,
+        salaAtual: ''
+      });
+    } else if (selectedAction === 'remove') {
+      if (window.confirm(`Tem certeza que deseja remover o item ${item.nPatrimonio}?`)) {
+        handleDelete(item.nPatrimonio);
+      }
+    }
   };
 
   const renderViewItemDetails = () => {
@@ -189,7 +199,7 @@ const Items: React.FC = () => {
           <div className="form-group">
             <label>Foto:</label>
             <div>
-              <img src={viewingItem.foto} alt="Item" style={{ maxWidth: '100%', maxHeight: '200px' }} />
+              <img src={viewingItem.foto} alt="Item" style={{ maxWidth: '100%', maxHeight: '300px' }} />
             </div>
           </div>
         )}
@@ -217,7 +227,7 @@ const Items: React.FC = () => {
       case 'insert':
         return (
           <div className="action-form">
-            <h3>Insert New Item</h3>
+            <h3>Inserir Novo Item</h3>
             <form onSubmit={handleInsertSubmit}>
               <div className="form-group">
                 <label>Patrimônio Nº:</label>
@@ -300,17 +310,28 @@ const Items: React.FC = () => {
                 />
               </div>
               <div className="form-buttons">
-                <button type="submit" className="btn-submit">Submit</button>
-                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancel</button>
+                <button type="submit" className="btn-submit">Cadastrar</button>
+                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancelar</button>
               </div>
             </form>
           </div>
         );
       
       case 'update':
+        if (!currentItem) {
+          return (
+            <div className="action-form">
+              <h3>Atualizar Item</h3>
+              <p>Selecione um item da tabela para atualizar.</p>
+              <div className="form-buttons">
+                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancelar</button>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="action-form">
-            <h3>Update Item</h3>
+            <h3>Atualizar Item</h3>
             <form onSubmit={handleUpdateSubmit}>
               <div className="form-group">
                 <label>Patrimônio Nº:</label>
@@ -370,6 +391,14 @@ const Items: React.FC = () => {
                   onChange={handleInputChange} 
                 />
               </div>
+              {formData.foto && (
+                <div className="form-group">
+                  <label>Prévia da Imagem:</label>
+                  <div>
+                    <img src={formData.foto} alt="Item Preview" style={{ maxWidth: '100%', maxHeight: '200px' }} />
+                  </div>
+                </div>
+              )}
               <div className="form-group">
                 <label>Sala Registrada:</label>
                 <input 
@@ -391,17 +420,31 @@ const Items: React.FC = () => {
                 />
               </div>
               <div className="form-buttons">
-                <button type="submit" className="btn-submit">Update</button>
-                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancel</button>
+                <button type="submit" className="btn-submit">Atualizar</button>
+                <button type="button" className="btn-cancel" onClick={() => {
+                  setSelectedAction(null);
+                  setCurrentItem(null);
+                }}>Cancelar</button>
               </div>
             </form>
           </div>
         );
       
       case 'move':
+        if (!currentItem) {
+          return (
+            <div className="action-form">
+              <h3>Mover Item</h3>
+              <p>Selecione um item da tabela para mover.</p>
+              <div className="form-buttons">
+                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancelar</button>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="action-form">
-            <h3>Move Item</h3>
+            <h3>Mover Item</h3>
             <form onSubmit={handleMoveSubmit}>
               <div className="form-group">
                 <label>Patrimônio Nº:</label>
@@ -423,10 +466,35 @@ const Items: React.FC = () => {
                 />
               </div>
               <div className="form-buttons">
-                <button type="submit" className="btn-submit">Move</button>
-                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancel</button>
+                <button type="submit" className="btn-submit">Mover</button>
+                <button type="button" className="btn-cancel" onClick={() => {
+                  setSelectedAction(null);
+                  setCurrentItem(null);
+                }}>Cancelar</button>
               </div>
             </form>
+          </div>
+        );
+      
+      case 'remove':
+        return (
+          <div className="action-form">
+            <h3>Remover Item</h3>
+            <p>Selecione um item da tabela para remover.</p>
+            <div className="form-buttons">
+              <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancelar</button>
+            </div>
+          </div>
+        );
+
+      case 'view':
+        return (
+          <div className="action-form">
+            <h3>Visualizar Item</h3>
+            <p>Selecione um item da tabela para visualizar os detalhes.</p>
+            <div className="form-buttons">
+              <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancelar</button>
+            </div>
           </div>
         );
       
@@ -440,18 +508,10 @@ const Items: React.FC = () => {
       <div className="sidebar">
         <h2>Ações</h2>
         <button onClick={() => handleActionSelect('insert')}>Inserir</button>
-        <button onClick={() => selectedAction !== 'update' ? setSelectedAction('update') : setSelectedAction(null)}>
-          Atualizar
-        </button>
-        <button onClick={() => selectedAction !== 'move' ? setSelectedAction('move') : setSelectedAction(null)}>
-          Mover
-        </button>
-        <button onClick={() => selectedAction !== 'view' ? setSelectedAction('view') : setSelectedAction(null)}>
-          Visualizar
-        </button>
-        <button onClick={() => selectedAction !== 'remove' ? setSelectedAction('remove') : setSelectedAction(null)}>
-          Remover
-        </button>
+        <button onClick={() => handleActionSelect('update')}>Atualizar</button>
+        <button onClick={() => handleActionSelect('move')}>Mover</button>
+        <button onClick={() => handleActionSelect('view')}>Visualizar</button>
+        <button onClick={() => handleActionSelect('remove')}>Remover</button>
       </div>
       
       <div className="content">
@@ -477,17 +537,23 @@ const Items: React.FC = () => {
                   <th>Estado</th>
                   <th>Sala Registrada</th>
                   <th>Sala Atual</th>
-                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={9}>Nenhum item encontrado</td>
+                    <td colSpan={8}>Nenhum item encontrado</td>
                   </tr>
                 ) : (
                   items.map(item => (
-                    <tr key={item.nPatrimonio}>
+                    <tr 
+                      key={item.nPatrimonio} 
+                      onClick={() => handleSelectItem(item)}
+                      style={{ 
+                        cursor: selectedAction ? 'pointer' : 'default',
+                        backgroundColor: (currentItem?.nPatrimonio === item.nPatrimonio || viewingItem?.nPatrimonio === item.nPatrimonio) ? '#e0f7fa' : ''
+                      }}
+                    >
                       <td>{item.nPatrimonio}</td>
                       <td>{item.nAntigo}</td>
                       <td>{item.descricao}</td>
@@ -496,16 +562,6 @@ const Items: React.FC = () => {
                       <td>{item.state || 'N/A'}</td>
                       <td>{item.salaRegistrada}</td>
                       <td>{item.salaAtual}</td>
-                      <td className="action-buttons">
-                        <button onClick={() => handleActionSelect('update', item)}>Edit</button>
-                        <button onClick={() => handleActionSelect('move', item)}>Move</button>
-                        <button onClick={() => handleViewItem(item)}>View</button>
-                        {selectedAction === 'remove' && (
-                          <button className="delete-btn" onClick={() => handleDelete(item.nPatrimonio)}>
-                            Delete
-                          </button>
-                        )}
-                      </td>
                     </tr>
                   ))
                 )}
