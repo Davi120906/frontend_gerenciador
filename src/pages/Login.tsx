@@ -20,9 +20,9 @@ const Login: React.FC = () => {
       console.log('token salvo: ', localStorage.getItem("tokenUser"));
       
       const itens = await getAllItems();
-      console.log('Itens recebidos após login:', itens[0].foto);
+      console.log('Itens recebidos após login:', itens[0]);
 
-      ///navigate('/items');
+      navigate('/items');
     }catch(error){
       console.log('deu erro aqui bicho', error);
       

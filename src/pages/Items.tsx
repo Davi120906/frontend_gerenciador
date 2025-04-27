@@ -39,10 +39,21 @@ const Items: React.FC = () => {
       setLoading(true);
       const data = await getAllItems();
       
-      setItems(data);
+      // Normalize the data structure if needed
+      const normalizedData = data.map((item: any) => ({
+        nPatrimonio: item.npatrimonio || item.nPatrimonio || '',
+        nAntigo: item.nantigo || item.nAntigo || '',
+        descricao: item.descricao || '',
+        conservacao: item.conservacao || '',
+        valorBem: item.valorBem || item.valorBem || 0,
+        foto: item.foto || '',
+        salaRegistrada: item.salaRegistrada || item.salaregistrada || '',
+        salaAtual: item.salaAtual || item.salaatual || '',
+        state: item.state || ''
+      }));
+      
+      setItems(normalizedData);
       setError(null);
-      console.log(data[0].foto); 
-      console.log("aaaa");
     } catch (err) { 
       setError('Failed to fetch items. Please try again later.');
       console.error('Error fetching items:', err);
@@ -199,7 +210,16 @@ const Items: React.FC = () => {
           <div className="form-group">
             <label>Foto:</label>
             <div>
-              <img src={viewingItem.foto} alt="Item" style={{ maxWidth: '100%', maxHeight: '300px' }} />
+              <img 
+                src={viewingItem.foto} 
+                alt="Item" 
+                style={{ maxWidth: '100%', maxHeight: '300px' }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = 'https://via.placeholder.com/300?text=Imagem+não+disponível';
+                }}
+              />
             </div>
           </div>
         )}
@@ -395,7 +415,16 @@ const Items: React.FC = () => {
                 <div className="form-group">
                   <label>Prévia da Imagem:</label>
                   <div>
-                    <img src={formData.foto} alt="Item Preview" style={{ maxWidth: '100%', maxHeight: '200px' }} />
+                    <img 
+                      src={formData.foto} 
+                      alt="Item Preview" 
+                      style={{ maxWidth: '100%', maxHeight: '200px' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = 'https://via.placeholder.com/200?text=Imagem+não+disponível';
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -537,12 +566,13 @@ const Items: React.FC = () => {
                   <th>Estado</th>
                   <th>Sala Registrada</th>
                   <th>Sala Atual</th>
+                  <th>Imagem</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={8}>Nenhum item encontrado</td>
+                    <td colSpan={9}>Nenhum item encontrado</td>
                   </tr>
                 ) : (
                   items.map(item => (
@@ -562,6 +592,20 @@ const Items: React.FC = () => {
                       <td>{item.state || 'N/A'}</td>
                       <td>{item.salaRegistrada}</td>
                       <td>{item.salaAtual}</td>
+                      <td>
+                        {item.foto ? (
+                          <img 
+                            src={item.foto}
+                            alt="Item thumbnail"
+                            style={{ maxWidth: '50px', maxHeight: '50px' }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = 'https://via.placeholder.com/50?text=N/A';
+                            }}
+                          />
+                        ) : 'Sem imagem'}
+                      </td>
                     </tr>
                   ))
                 )}
