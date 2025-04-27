@@ -180,6 +180,12 @@ const Items: React.FC = () => {
     }
   };
 
+  // Function to open image in new tab
+  const openImageInNewTab = (e: React.MouseEvent<HTMLImageElement>, imageUrl: string) => {
+    e.stopPropagation(); // Prevent the row click event from triggering
+    window.open(imageUrl, '_blank');
+  };
+
   const renderViewItemDetails = () => {
     if (!viewingItem) return null;
     
@@ -209,11 +215,12 @@ const Items: React.FC = () => {
         {viewingItem.foto && (
           <div className="form-group">
             <label>Foto:</label>
-            <div>
+            <div className="image-container">
               <img 
                 src={viewingItem.foto} 
                 alt="Item" 
-                style={{ maxWidth: '100%', maxHeight: '300px' }}
+                className="clickable-image"
+                onClick={(e) => openImageInNewTab(e, viewingItem.foto)}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
@@ -414,15 +421,16 @@ const Items: React.FC = () => {
               {formData.foto && (
                 <div className="form-group">
                   <label>Prévia da Imagem:</label>
-                  <div>
+                  <div className="image-container">
                     <img 
                       src={formData.foto} 
                       alt="Item Preview" 
-                      style={{ maxWidth: '100%', maxHeight: '200px' }}
+                      className="clickable-image"
+                      onClick={(e) => openImageInNewTab(e, formData.foto!)}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
-                        target.src = 'https://via.placeholder.com/200?text=Imagem+não+disponível';
+                        target.src = 'https://via.placeholder.com/300?text=Imagem+não+disponível';
                       }}
                     />
                   </div>
@@ -597,11 +605,12 @@ const Items: React.FC = () => {
                           <img 
                             src={item.foto}
                             alt="Item thumbnail"
-                            style={{ maxWidth: '50px', maxHeight: '50px' }}
+                            className="clickable-image"
+                            onClick={(e) => openImageInNewTab(e, item.foto)}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.onerror = null;
-                              target.src = 'https://via.placeholder.com/50?text=N/A';
+                              target.src = 'https://via.placeholder.com/80?text=N/A';
                             }}
                           />
                         ) : 'Sem imagem'}
