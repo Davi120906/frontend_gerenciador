@@ -1,10 +1,12 @@
 // src/pages/Items.tsx
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Item.css';
 import { getAllItems, deleteItem, updateItem, moveItem, registerItem } from '../services/ItemsService';
 import { Itens } from '../types/Itens';
 
 const Items: React.FC = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState<Itens[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +179,9 @@ const Items: React.FC = () => {
       if (window.confirm(`Tem certeza que deseja remover o item ${item.nPatrimonio}?`)) {
         handleDelete(item.nPatrimonio);
       }
+    } else {
+      // Se nenhuma ação estiver selecionada, navegar para a página de detalhes
+      navigate(`/item/${item.nPatrimonio}`);
     }
   };
 
@@ -549,6 +554,14 @@ const Items: React.FC = () => {
         <button onClick={() => handleActionSelect('move')}>Mover</button>
         <button onClick={() => handleActionSelect('view')}>Visualizar</button>
         <button onClick={() => handleActionSelect('remove')}>Remover</button>
+        
+        <div className="info-section">
+          <hr />
+          <p><strong>Dica:</strong></p>
+          <p>• Clique em uma ação no sidebar para ativá-la</p>
+          <p>• Clique em um item da tabela sem ação selecionada para ver detalhes completos</p>
+          <p>• Clique nas imagens para ampliar</p>
+        </div>
       </div>
       
       <div className="content">
@@ -588,9 +601,10 @@ const Items: React.FC = () => {
                       key={item.nPatrimonio} 
                       onClick={() => handleSelectItem(item)}
                       style={{ 
-                        cursor: selectedAction ? 'pointer' : 'default',
+                        cursor: 'pointer',
                         backgroundColor: (currentItem?.nPatrimonio === item.nPatrimonio || viewingItem?.nPatrimonio === item.nPatrimonio) ? '#e0f7fa' : ''
                       }}
+                      title={selectedAction ? `Clique para ${selectedAction === 'view' ? 'visualizar' : selectedAction === 'update' ? 'atualizar' : selectedAction === 'move' ? 'mover' : selectedAction === 'remove' ? 'remover' : 'selecionar'} este item` : 'Clique para ver detalhes completos'}
                     >
                       <td>{item.nPatrimonio}</td>
                       <td>{item.nAntigo}</td>

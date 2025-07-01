@@ -1,16 +1,29 @@
+// App.tsx - Exemplo de como configurar as rotas
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Items from './pages/Items';
+import ItemDetails from './pages/ItemDetails';
 import './App.css';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Items from './pages/Items'; // importe aqui o Items se ainda não estiver
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/items" element={<Items />} />
-      </Routes>
-    </BrowserRouter>
+    <Router>
+      <div className="App">
+        <Routes>
+          {/* Rota principal - redireciona para /items */}
+          <Route path="/" element={<Navigate to="/items" replace />} />
+          
+          {/* Rota para a lista de itens */}
+          <Route path="/items" element={<Items />} />
+          
+          {/* Rota para detalhes de um item específico */}
+          <Route path="/item/:nPatrimonio" element={<ItemDetails />} />
+          
+          {/* Rota para casos não encontrados */}
+          <Route path="*" element={<Navigate to="/items" replace />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
