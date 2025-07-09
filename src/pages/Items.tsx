@@ -1,13 +1,16 @@
-  // src/pages/Items.tsx
+// src/pages/Items.tsx
   import React, { useEffect, useState } from 'react';
   import { useNavigate } from 'react-router-dom';
   import './Item.css';
-  import { getAllItems, deleteItem, updateItem, moveItem, registerItem } from '../services/ItemsService';
+  import { getAllItems, deleteItem, updateItem, moveItem, registerItem, searchItems } from '../services/ItemsService';
   import { Itens } from '../types/Itens';
+  import jsPDF from 'jspdf';
+
 
   const Items: React.FC = () => {
     const navigate = useNavigate();
     const [items, setItems] = useState<Itens[]>([]);
+    const [buscaFeita, setBuscaFeita] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -27,11 +30,16 @@
         state: ''  // campo novo para o estado do item
       });
 
-
     // Form state for move operation
     const [moveFormData, setMoveFormData] = useState({
       nPatrimonio: '',
       salaAtual: ''
+    });
+
+    // Form state for search operation
+    const [searchFormData, setSearchFormData] = useState({
+      tipoBusca: 'npatrimonio',
+      busca: ''
     });
 
     useEffect(() => {
@@ -94,6 +102,14 @@
       });
     };
 
+    const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setSearchFormData({
+        ...searchFormData,
+        [name]: value
+      });
+    };
+
     const handleInsertSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
@@ -131,6 +147,59 @@
         setError('Failed to move item. Please check the data and try again.');
         console.error('Error moving item:', err);
       }
+    };
+
+    const handleSearchSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+        setLoading(true);
+        const searchResults = await searchItems(searchFormData.tipoBusca, searchFormData.busca);
+        
+        // Normalize the search results data structure
+        const normalizedResults = searchResults.map((item: any) => ({
+          nPatrimonio: item.npatrimonio || item.nPatrimonio || '',
+          nAntigo: item.nantigo || item.nAntigo || '',
+          descricao: item.descricao || '',
+          conservacao: item.conservacao || '',
+          valorBem: item.valorBem || item.valorBem || 0,
+          foto: item.foto || '',
+          salaRegistrada: item.salaRegistrada || item.salaregistrada || '',
+          salaAtual: item.salaAtual || item.salaatual || '',
+          state: item.state || ''
+        }));
+        
+        setItems(normalizedResults);
+        setError(null);
+        setBuscaFeita(true);
+
+      } catch (err) {
+        setError('Failed to search items. Please try again.');
+        console.error('Error searching items:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const gerarPDF = () => {
+      const doc = new jsPDF();
+      doc.setFontSize(12);
+      doc.text('Relatório de Itens Encontrados', 10, 10);
+
+      let y = 20;
+
+      items.forEach((item, index) => {
+        doc.text(
+          `${index + 1}. ${item.nPatrimonio} | ${item.descricao} | Valor: R$ ${item.valorBem.toFixed(2)} | Sala Atual: ${item.salaAtual}`,
+          10,
+          y
+        );
+        y += 10;
+        if (y > 280) {
+          doc.addPage();
+          y = 10;
+        }
+      });
+
+      doc.save('relatorio_busca.pdf');
     };
 
     const resetForm = () => {
@@ -531,14 +600,52 @@
             </div>
           );
 
-        case 'view':
+        case 'search':
           return (
             <div className="action-form">
-              <h3>Visualizar Item</h3>
-              <p>Selecione um item da tabela para visualizar os detalhes.</p>
-              <div className="form-buttons">
-                <button type="button" className="btn-cancel" onClick={() => setSelectedAction(null)}>Cancelar</button>
-              </div>
+              <h3>Buscar Itens</h3>
+              <form onSubmit={handleSearchSubmit}>
+                <div className="form-group">
+                  <label>Critério de Busca:</label>
+                  <select 
+                    name="tipoBusca" 
+                    value={searchFormData.tipoBusca} 
+                    onChange={handleSearchInputChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      color: '#333'
+                    }}
+                  >
+                    <option value="npatrimonio">Número do Patrimônio</option>
+                    <option value="salaAtual">Sala atual</option>
+                    <option value="salaRegistrada">Sala Registrada</option>
+                    <option value="valor">Valor</option>
+                    <option value="descricao">Descrição</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Termo de Busca:</label>
+                  <input 
+                    type="text" 
+                    name="busca" 
+                    value={searchFormData.busca} 
+                    onChange={handleSearchInputChange} 
+                    placeholder="Digite o termo para buscar..."
+                    required 
+                  />
+                </div>
+                <div className="form-buttons">
+                  <button type="submit" className="btn-submit">Buscar</button>
+                  <button type="button" className="btn-cancel" onClick={() => {
+                    setSelectedAction(null);
+                    fetchItems(); // Recarrega todos os itens
+                  }}>Cancelar</button>
+                </div>
+              </form>
             </div>
           );
         
@@ -554,7 +661,7 @@
           <button onClick={() => handleActionSelect('insert')}>Inserir</button>
           <button onClick={() => handleActionSelect('update')}>Atualizar</button>
           <button onClick={() => handleActionSelect('move')}>Mover</button>
-          <button onClick={() => handleActionSelect('view')}>Visualizar</button>
+          <button onClick={() => handleActionSelect('search')}>Buscar</button>
           <button onClick={() => handleActionSelect('remove')}>Remover</button>
           
           <div className="info-section">
@@ -606,7 +713,7 @@
                           cursor: 'pointer',
                           backgroundColor: (currentItem?.nPatrimonio === item.nPatrimonio || viewingItem?.nPatrimonio === item.nPatrimonio) ? '#e0f7fa' : ''
                         }}
-                        title={selectedAction ? `Clique para ${selectedAction === 'view' ? 'visualizar' : selectedAction === 'update' ? 'atualizar' : selectedAction === 'move' ? 'mover' : selectedAction === 'remove' ? 'remover' : 'selecionar'} este item` : 'Clique para ver detalhes completos'}
+                        title={selectedAction ? `Clique para ${selectedAction === 'update' ? 'atualizar' : selectedAction === 'move' ? 'mover' : selectedAction === 'remove' ? 'remover' : 'selecionar'} este item` : 'Clique para ver detalhes completos'}
                       >
                         <td>{item.nPatrimonio}</td>
                         <td>{item.nAntigo}</td>
@@ -638,6 +745,14 @@
               </table>
             </div>
           )}
+          {selectedAction === 'search' && buscaFeita && items.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <button onClick={gerarPDF} className="btn-submit">
+                Gerar PDF do Resultado
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     );
