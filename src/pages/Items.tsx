@@ -5,9 +5,10 @@
   import { getAllItems, deleteItem, updateItem, moveItem, registerItem, searchItems } from '../services/ItemsService';
   import { Itens } from '../types/Itens';
   import jsPDF from 'jspdf';
+  
 
 
-  const Items: React.FC = () => {
+  const Itens: React.FC = () => {
     const navigate = useNavigate();
     const [items, setItems] = useState<Itens[]>([]);
     const [buscaFeita, setBuscaFeita] = useState(false);
@@ -41,6 +42,9 @@
       tipoBusca: 'npatrimonio',
       busca: ''
     });
+    const role = localStorage.getItem('userRole');
+    const isAdmin = role === 'admin';
+
 
     useEffect(() => {
       fetchItems();
@@ -656,6 +660,31 @@
 
     return (
       <div className="items-container">
+          {isAdmin && (
+          <div style={{ 
+            position: 'fixed', 
+            top: '20px', 
+            right: '20px', 
+            zIndex: 1000 
+          }}>
+            <button 
+              onClick={() =>  console.log(role)}
+              style={{ 
+                padding: '10px 20px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                fontSize: '14px'
+              }}
+            >
+              Usuários
+            </button>
+          </div>
+        )}
+
         <div className="sidebar">
           <h2>Ações</h2>
           <button onClick={() => handleActionSelect('insert')}>Inserir</button>
@@ -758,4 +787,4 @@
     );
   };
 
-  export default Items;
+  export

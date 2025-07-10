@@ -3,6 +3,7 @@ import './Login.css';
 import { loginUser } from '../services/LoginService';
 import { useNavigate } from 'react-router-dom';
 import { getAllItems, deleteItem, updateItem, moveItem, registerItem } from '../services/ItemsService';
+import { saveUserRoleFromToken } from '../services/AuthService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const Login: React.FC = () => {
       console.log('token: ', response.token);
       localStorage.setItem("tokenUser",response.token);
       localStorage.setItem("idUser", id);
+      saveUserRoleFromToken(response.token);
       console.log('token salvo: ', localStorage.getItem("tokenUser"));
       
       const itens = await getAllItems();
