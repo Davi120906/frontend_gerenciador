@@ -1,4 +1,4 @@
-// src/pages/QRCodeWithLabel.tsx
+x// src/pages/QRCodeWithLabel.tsx
 import React, { useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 

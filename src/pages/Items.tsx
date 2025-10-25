@@ -244,10 +244,10 @@ const Items: React.FC = () => {
     "Nº Patrimônio",
     "Nº Antigo",
     "Descrição",
-    "Conservação",
+    "Comentario ",
     "Valor (R$)",
     "Sala Atual",
-    "Sala Registrada"  // <- nova coluna
+    "Sala Registrada" 
   ];
 
   // Larguras relativas de cada coluna
