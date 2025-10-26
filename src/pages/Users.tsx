@@ -14,15 +14,14 @@ const Users: React.FC = () => {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
-  // Form state - ATUALIZADO para incluir os novos campos
+  // Form state - sem campo de senha para update
   const [formData, setFormData] = useState<Partial<User>>({
     id: 0,
     nome: '',
     email: '',
     telefone: '',
     funcao: '',
-    role: UserRoles.USER,
-    password: ''
+    role: UserRoles.USER
   });
 
   useEffect(() => {
@@ -90,18 +89,7 @@ const Users: React.FC = () => {
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (formData.password && formData.password.length < 6) {
-        setError('A senha deve ter pelo menos 6 caracteres.');
-        return;
-      }
-      
-      // Se a senha estiver vazia, removê-la do objeto para não alterar
-      const updateData = { ...formData };
-      if (!updateData.password) {
-        delete updateData.password;
-      }
-      
-      await updateUser(formData.id!, updateData as User);
+      await updateUser(formData.id!, formData as User);
       setSuccess('Usuário atualizado com sucesso!');
       fetchUsers();
       setSelectedAction(null);
@@ -121,8 +109,7 @@ const Users: React.FC = () => {
       email: '',
       telefone: '',
       funcao: '',
-      role: UserRoles.USER,
-      password: ''
+      role: UserRoles.USER
     });
     setCurrentUser(null);
   };
@@ -147,8 +134,7 @@ const Users: React.FC = () => {
         email: user.email,
         telefone: user.telefone,
         funcao: user.funcao,
-        role: user.role,
-        password: '' // Não preenchemos a senha atual por segurança
+        role: user.role
       });
     } else if (selectedAction === 'delete') {
       handleDelete(user.id, user.nome);
@@ -332,17 +318,6 @@ const Users: React.FC = () => {
                   <option value={UserRoles.USER}>Usuário</option>
                   <option value={UserRoles.ADMIN}>Administrador</option>
                 </select>
-              </div>
-              <div className="form-group">
-                <label>Nova Senha (opcional):</label>
-                <input 
-                  type="password" 
-                  name="password" 
-                  value={formData.password} 
-                  onChange={handleInputChange} 
-                  minLength={6}
-                />
-                <div className="password-hint">Deixe em branco para manter a senha atual</div>
               </div>
               <div className="form-buttons">
                 <button type="submit" className="btn-submit">Atualizar</button>

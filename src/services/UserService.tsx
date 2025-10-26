@@ -70,18 +70,15 @@ export const deleteUser = async (id: number): Promise<void> => {
 export const updateUser = async (id: number, user: User): Promise<void> => {
   try {
     console.log('Atualizando usuário:', id, user);
-    
-    // Preparar payload com todos os campos
+    // Preparar payload sem password
     const payload = {
       id: user.id,
       nome: user.nome,
       email: user.email || '',
       telefone: user.telefone || '',
       funcao: user.funcao || '',
-      role: user.role,
-      ...(user.password && { password: user.password }) // Só inclui password se fornecido
+      role: user.role
     };
-    
     await axios.put(`${API_URL}/atualizar/${id}`, payload);
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);

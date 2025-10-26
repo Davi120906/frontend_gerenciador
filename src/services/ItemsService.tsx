@@ -55,16 +55,17 @@ export const registerItem = async (item: Itens): Promise<void> => {
     console.log('Token atual:', localStorage.getItem('tokenUser'));
 
     const payload = {
-  npatrimonio: item.nPatrimonio,
-  nantigo: item.nAntigo,
-  descricao: item.descricao,
-  conservacao: item.conservacao,
-  valorBem: item.valorBem,
-  foto: item.foto,
-  salaRegistrada: item.salaRegistrada,
-  salaAtual: item.salaAtual,
-  state: item.state || "ocioso" // usa o estado ou padrão
-};
+      npatrimonio: item.nPatrimonio,
+      nantigo: item.nAntigo,
+      descricao: item.descricao,
+      conservacao: item.conservacao,
+      valorBem: item.valorBem,
+      foto: item.foto,
+      salaRegistrada: item.salaRegistrada,
+      salaAtual: item.salaAtual,
+      state: item.state || "ocioso", // usa o estado ou padrão
+      responsavel: item.responsavel // novo campo
+    };
 console.log('item.salaRegistrada:', item.salaRegistrada);
 console.log('Payload final:', payload);
 
@@ -98,7 +99,8 @@ export const updateItem = async (nPatrimonio: string, item: Itens): Promise<void
       foto: item.foto,
       salaRegistrada: item.salaRegistrada,
       salaAtual: item.salaAtual,
-      state: item.state || 'ocioso'
+      state: item.state || 'ocioso',
+      responsavel: item.responsavel // novo campo
     };
 
     console.log('Payload de atualização:', payload);

@@ -29,7 +29,8 @@ const ItemDetails: React.FC = () => {
           foto: item.foto || '',
           salaRegistrada: item.salaRegistrada || item.salaregistrada || '',
           salaAtual: item.salaAtual || item.salaatual || '',
-          state: item.state || ''
+          state: item.state || '',
+          responsavel: item.responsavel || ''
         }));
 
         const foundItem = normalizedItems.find((item: Itens) => item.nPatrimonio === nPatrimonio);
@@ -95,6 +96,7 @@ const ItemDetails: React.FC = () => {
               <div className="info-row"><span className="info-label">Nº Antigo:</span><span className="info-value">{item.nAntigo || 'N/A'}</span></div>
               <div className="info-row"><span className="info-label">Descrição:</span><span className="info-value">{item.descricao}</span></div>
               <div className="info-row"><span className="info-label">Estado:</span><span className="info-value">{item.state || 'N/A'}</span></div>
+              <div className="info-row"><span className="info-label">Responsável:</span><span className="info-value">{item.responsavel}</span></div>
             </div>
 
             <div className="info-card">

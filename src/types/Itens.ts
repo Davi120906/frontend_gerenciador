@@ -10,4 +10,5 @@ export interface Itens {
   salaRegistrada: string;
   salaAtual: string;
   comentario?: string; // Novo campo adicionado
+  responsavel: string; // Novo campo adicionado
 }

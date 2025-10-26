@@ -7,6 +7,7 @@ import { Itens } from '../types/Itens';
 import jsPDF from 'jspdf';
 
 const Items: React.FC = () => {
+  // ...existing code...
   const navigate = useNavigate();
   const [items, setItems] = useState<Itens[]>([]);
   const [buscaFeita, setBuscaFeita] = useState(false);
@@ -26,7 +27,8 @@ const Items: React.FC = () => {
     foto: '',
     salaRegistrada: '',
     salaAtual: '',
-    state: ''  
+    state: '',
+    responsavel: '' // <-- Adicione esta linha
   });
 
   // Novo: estados selecionados para o campo state no inserir
@@ -38,14 +40,52 @@ const Items: React.FC = () => {
     salaAtual: ''
   }); 
 
-  // Form state for search operation
+  // Novo sistema de busca: formulário igual ao de inserção
   const [searchFormData, setSearchFormData] = useState({
-    tipoBusca: 'npatrimonio',
-    busca: '',
-    estados: [] as string[] // novo campo para múltiplos estados
+    nPatrimonio: '',
+    nAntigo: '',
+    descricao: '',
+    conservacao: '',
+    valorBem: '',
+    foto: '',
+    salaRegistrada: '',
+    salaAtual: '',
+    responsavel: '',
+    state: '' // string separada por vírgula
   });
   const role = localStorage.getItem('userRole');
   const isAdmin = role === 'admin';
+
+  // Estados para o campo state no update
+  const stateOptions = ['ocioso', 'quebrado', 'nao encontrado', 'sem plaqueta'];
+  const [updateStates, setUpdateStates] = useState<string[]>([]);
+
+  // Atualiza updateStates quando currentItem muda
+  useEffect(() => {
+    if (selectedAction === 'update' && currentItem) {
+      const itemStates = currentItem.state ? currentItem.state.split(',').map(s => s.trim()) : [];
+      // Mantém ordem fixa
+      setUpdateStates(stateOptions.filter(opt => itemStates.includes(opt)));
+    }
+  }, [selectedAction, currentItem]);
+
+  // Handle para as caixinhas de estado no update
+  const handleUpdateStateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    let newStates = [...updateStates];
+    if (checked) {
+      if (!newStates.includes(value)) newStates.push(value);
+    } else {
+      newStates = newStates.filter(s => s !== value);
+    }
+    // Mantém ordem fixa
+    setUpdateStates(stateOptions.filter(opt => newStates.includes(opt)));
+    // Atualiza formData.state
+    setFormData({
+      ...formData,
+      state: stateOptions.filter(opt => newStates.includes(opt)).join(',')
+    });
+  };
 
   useEffect(() => {
     fetchItems();
@@ -66,7 +106,8 @@ const Items: React.FC = () => {
         foto: item.foto || '',
         salaRegistrada: item.salaRegistrada || item.salaregistrada || '',
         salaAtual: item.salaAtual || item.salaatual || '',
-        state: item.state || ''
+        state: item.state || '',
+        responsavel: item.responsavel || ''
       }));
       
       setItems(normalizedData);
@@ -107,22 +148,28 @@ const Items: React.FC = () => {
     });
   };
 
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, options } = e.target as HTMLSelectElement;
-    if (name === "estados") {
-      const selected = Array.from(options)
-        .filter(option => option.selected)
-        .map(option => option.value);
-      setSearchFormData({
-        ...searchFormData,
-        estados: selected
-      });
+  // Novo: handle para todos os campos do formulário de busca
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSearchFormData({
+      ...searchFormData,
+      [name]: name === 'valorBem' ? value.replace(/[^\d.]/g, '') : value
+    });
+  };
+
+  // Novo: handle para os quadradinhos de estado (busca)
+  const handleSearchStateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    let newState = searchFormData.state ? searchFormData.state.split(',').map(s => s.trim()) : [];
+    if (checked) {
+      if (!newState.includes(value)) newState.push(value);
     } else {
-      setSearchFormData({
-        ...searchFormData,
-        [name]: value
-      });
+      newState = newState.filter(s => s !== value);
     }
+    setSearchFormData({
+      ...searchFormData,
+      state: newState.join(',')
+    });
   };
 
   // Novo: handle para o campo state do inserir
@@ -177,33 +224,14 @@ const Items: React.FC = () => {
     }
   };
 
-  // MODIFICADO: busca por estados múltiplos, se nenhum marcado mostra tudo
+  // Novo: busca por múltiplos critérios (AND)
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      let searchResults: Itens[] = [];
-      if (searchFormData.tipoBusca === "state") {
-        // Se nenhum estado for selecionado, retorna todos
-        if (searchFormData.estados.length === 0) {
-          searchResults = await getAllItems();
-        } else {
-          // Busca por todos os estados selecionados
-          const allItems = await getAllItems();
-          searchResults = allItems.filter(item => {
-            if (!item.state) return false;
-            // item.state pode ser "ocioso,quebrado" etc
-            const itemStates = item.state.split(',').map(s => s.trim().toLowerCase());
-            // Se algum dos estados do item está nos estados buscados
-            return searchFormData.estados.some(estado => itemStates.includes(estado.toLowerCase()));
-          });
-        }
-      } else {
-        searchResults = await searchItems(searchFormData.tipoBusca, searchFormData.busca);
-      }
-
-      // Normalize the search results data structure
-      const normalizedResults = searchResults.map((item: any) => ({
+      const allItems = await getAllItems();
+      // Filtra por todos os campos preenchidos
+      const normalizedAll = allItems.map((item: any) => ({
         nPatrimonio: item.npatrimonio || item.nPatrimonio || '',
         nAntigo: item.nantigo || item.nAntigo || '',
         descricao: item.descricao || '',
@@ -212,13 +240,32 @@ const Items: React.FC = () => {
         foto: item.foto || '',
         salaRegistrada: item.salaRegistrada || item.salaregistrada || '',
         salaAtual: item.salaAtual || item.salaatual || '',
+        responsavel: item.responsavel || '',
         state: item.state || ''
       }));
-
-      setItems(normalizedResults);
+      const filtered = normalizedAll.filter((normalized) => {
+        for (const key in searchFormData) {
+          const value = searchFormData[key as keyof typeof searchFormData];
+          if (value && value !== '') {
+            if (key === 'valorBem') {
+              if (value && normalized.valorBem !== parseFloat(value)) return false;
+            } else if (key === 'state') {
+              const searchStates = value.split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+              const itemStates = normalized.state.split(',').map((s: string) => s.trim().toLowerCase());
+              if (searchStates.length > 0 && !searchStates.every((s: string) => itemStates.includes(s))) return false;
+            } else {
+              const fieldValue = normalized[key as keyof typeof normalized];
+              if (typeof fieldValue === 'string') {
+                if (!fieldValue.toLowerCase().includes((value as string).toLowerCase())) return false;
+              }
+            }
+          }
+        }
+        return true;
+      });
+      setItems(filtered);
       setError(null);
       setBuscaFeita(true);
-
     } catch (err) {
       setError('Failed to search items. Please try again.');
       console.error('Error searching items:', err);
@@ -256,7 +303,7 @@ const Items: React.FC = () => {
   let y = startY;
 
   // Cabeçalho
-  doc.setFont(undefined, 'bold');
+  doc.setFont('helvetica', 'bold');
   let x = margin;
   headers.forEach((header, i) => {
     doc.text(header, x, y);
@@ -264,22 +311,22 @@ const Items: React.FC = () => {
   });
 
   // Conteúdo
-  doc.setFont(undefined, 'normal');
+  doc.setFont('helvetica', 'normal');
   y += rowHeight;
 
-  items.forEach((item, index) => {
+  items.forEach((item) => {
     if (y > 190) {
       doc.addPage();
       y = startY;
 
       // Reinsere cabeçalho
-      doc.setFont(undefined, 'bold');
+  doc.setFont('helvetica', 'bold');
       x = margin;
       headers.forEach((header, i) => {
         doc.text(header, x, y);
         x += colWidths[i];
       });
-      doc.setFont(undefined, 'normal');
+  doc.setFont('helvetica', 'normal');
       y += rowHeight;
     }
 
@@ -315,7 +362,8 @@ const Items: React.FC = () => {
       valorBem: 0,
       foto: '',
       salaRegistrada: '',
-      salaAtual: ''
+      salaAtual: '',
+      responsavel: '' // <-- Adicione esta linha
     });
   };
 
@@ -518,7 +566,7 @@ const Items: React.FC = () => {
               </div>
               <div className="form-group">
                 <label>Estado:</label>
-                <div className="checkbox-group">
+                <div className="checkbox-group horizontal-checkboxes">
                   <label>
                     <input 
                       type="checkbox" 
@@ -556,6 +604,16 @@ const Items: React.FC = () => {
                     Sem plaqueta
                   </label>
                 </div>
+              </div>
+              <div className="form-group">
+                <label>Responsável:</label>
+                <input 
+                  type="text" 
+                  name="responsavel" 
+                  value={formData.responsavel} 
+                  onChange={handleInputChange} 
+                  required 
+                />
               </div>
               <div className="form-buttons">
                 <button type="submit" className="btn-submit">Cadastrar</button>
@@ -677,6 +735,22 @@ const Items: React.FC = () => {
                   required 
                 />
               </div>
+              <div className="form-group">
+                <label>Estado:</label>
+                <div className="checkbox-group horizontal-checkboxes">
+                  {stateOptions.map(opt => (
+                    <label key={opt}>
+                      <input
+                        type="checkbox"
+                        value={opt}
+                        checked={updateStates.includes(opt)}
+                        onChange={handleUpdateStateChange}
+                      />
+                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div className="form-buttons">
                 <button type="submit" className="btn-submit">Atualizar</button>
                 <button type="button" className="btn-cancel" onClick={() => {
@@ -751,111 +825,128 @@ const Items: React.FC = () => {
             <h3>Buscar Itens</h3>
             <form onSubmit={handleSearchSubmit}>
               <div className="form-group">
-                <label>Critério de Busca:</label>
-                <select 
-                  name="tipoBusca" 
-                  value={searchFormData.tipoBusca} 
+                <label>Patrimônio Nº:</label>
+                <input 
+                  type="text" 
+                  name="nPatrimonio" 
+                  value={searchFormData.nPatrimonio}
                   onChange={handleSearchInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}
-                >
-                  <option value="npatrimonio">Número do Patrimônio</option>
-                  <option value="salaAtual">Sala atual</option>
-                  <option value="salaRegistrada">Sala Registrada</option>
-                  <option value="valor">Valor</option>
-                  <option value="descricao">Descrição</option>
-                  <option value="state">Estado</option>
-                </select>
+                  placeholder="Ex: 12345678-9"
+                />
               </div>
               <div className="form-group">
-                <label>Termo de Busca:</label>
-                {searchFormData.tipoBusca === "state" ? (
-                  <div className="checkbox-group">
-                    <label>
-                      <input
-                        type="checkbox"
-                        value="ocioso"
-                        checked={searchFormData.estados.includes('ocioso')}
-                        onChange={e => {
-                          const { value, checked } = e.target;
-                          setSearchFormData(prev => ({
-                            ...prev,
-                            estados: checked
-                              ? [...prev.estados, value]
-                              : prev.estados.filter(s => s !== value)
-                          }));
-                        }}
-                      />
-                      Ocioso
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        value="quebrado"
-                        checked={searchFormData.estados.includes('quebrado')}
-                        onChange={e => {
-                          const { value, checked } = e.target;
-                          setSearchFormData(prev => ({
-                            ...prev,
-                            estados: checked
-                              ? [...prev.estados, value]
-                              : prev.estados.filter(s => s !== value)
-                          }));
-                        }}
-                      />
-                      Quebrado
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        value="nao encontrado"
-                        checked={searchFormData.estados.includes('nao encontrado')}
-                        onChange={e => {
-                          const { value, checked } = e.target;
-                          setSearchFormData(prev => ({
-                            ...prev,
-                            estados: checked
-                              ? [...prev.estados, value]
-                              : prev.estados.filter(s => s !== value)
-                          }));
-                        }}
-                      />
-                      Não encontrado
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        value="sem plaqueta"
-                        checked={searchFormData.estados.includes('sem plaqueta')}
-                        onChange={e => {
-                          const { value, checked } = e.target;
-                          setSearchFormData(prev => ({
-                            ...prev,
-                            estados: checked
-                              ? [...prev.estados, value]
-                              : prev.estados.filter(s => s !== value)
-                          }));
-                        }}
-                      />
-                      Sem plaqueta
-                    </label>
-                  </div>
-                ) : (
-                  <input 
-                    type="text" 
-                    name="busca" 
-                    value={searchFormData.busca} 
-                    onChange={handleSearchInputChange} 
-                    placeholder="Digite o termo para buscar..."
-                    required 
-                  />
-                )}
+                <label>Nº Antigo:</label>
+                <input 
+                  type="text" 
+                  name="nAntigo" 
+                  value={searchFormData.nAntigo}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Descrição:</label>
+                <input 
+                  type="text" 
+                  name="descricao" 
+                  value={searchFormData.descricao}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Conservação:</label>
+                <input 
+                  type="text" 
+                  name="conservacao" 
+                  value={searchFormData.conservacao}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Valor:</label>
+                <input 
+                  type="number" 
+                  name="valorBem" 
+                  value={searchFormData.valorBem}
+                  onChange={handleSearchInputChange}
+                  step="0.01"
+                />
+              </div>
+              <div className="form-group">
+                <label>Foto URL:</label>
+                <input 
+                  type="text" 
+                  name="foto" 
+                  value={searchFormData.foto}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Sala Registrada:</label>
+                <input 
+                  type="text" 
+                  name="salaRegistrada" 
+                  value={searchFormData.salaRegistrada}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Sala Atual:</label>
+                <input 
+                  type="text" 
+                  name="salaAtual" 
+                  value={searchFormData.salaAtual}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Responsável:</label>
+                <input 
+                  type="text" 
+                  name="responsavel" 
+                  value={searchFormData.responsavel}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Estado:</label>
+                <div className="checkbox-group horizontal-checkboxes">
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      value="ocioso" 
+                      checked={searchFormData.state.split(',').map(s => s.trim()).includes('ocioso')}
+                      onChange={handleSearchStateChange}
+                    />
+                    Ocioso
+                  </label>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      value="quebrado" 
+                      checked={searchFormData.state.split(',').map(s => s.trim()).includes('quebrado')}
+                      onChange={handleSearchStateChange}
+                    />
+                    Quebrado
+                  </label>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      value="nao encontrado" 
+                      checked={searchFormData.state.split(',').map(s => s.trim()).includes('nao encontrado')}
+                      onChange={handleSearchStateChange}
+                    />
+                    Não encontrado
+                  </label>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      value="sem plaqueta" 
+                      checked={searchFormData.state.split(',').map(s => s.trim()).includes('sem plaqueta')}
+                      onChange={handleSearchStateChange}
+                    />
+                    Sem plaqueta
+                  </label>
+                </div>
               </div>
               <div className="form-buttons">
                 <button type="submit" className="btn-submit">Buscar</button>
